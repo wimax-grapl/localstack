@@ -147,7 +147,7 @@ web:
 ## Run automated tests
 test:
 	make lint && \
-		($(VENV_RUN); DEBUG=$(DEBUG) python -m pytest -p pytest_cov --log-cli-level=WARNING -s --cov=localstack $(TEST_PATH))
+		($(VENV_RUN); DEBUG=$(DEBUG) python -m pytest -p pytest_cov --log-cli-level=WARNING -s --cov=localstack $(PYTEST_ARGS) $(TEST_PATH))
 
 test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
@@ -179,11 +179,11 @@ ci-build-test:
 	# check if the build environment contains a special command via $$CUSTOM_CMD
 	if [ "$$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
 	# run tests using Python 3 (limit the set of tests to reduce test duration)
-	DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-	DEBUG=1 SQS_PROVIDER=elasticmq TEST_PATH="tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation" make test
+	DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 PYTEST_ARGS="--cov-append" TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+	DEBUG=1 SQS_PROVIDER=elasticmq PYTEST_ARGS="--cov-append" TEST_PATH="tests/integration/test_sns.py -k test_publish_sqs_from_sns_with_xray_propagation" make test
 	# start pulling Docker base image in the background
 	nohup docker pull localstack/java-maven-node-python > /dev/null &
-	LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
+	LAMBDA_EXECUTOR=docker-reuse PYTEST_ARGS="--cov-append" TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
 
 ci-build-push:
 	# build Docker image
