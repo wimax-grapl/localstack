@@ -4,7 +4,6 @@ IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 DOCKER_SQUASH ?= --squash
-NOSE_LOG_LEVEL ?= WARNING
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
 TEST_PATH ?= .
