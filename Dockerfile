@@ -95,6 +95,8 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
+# fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
+RUN pip uninstall -y argparse
 RUN LAMBDA_EXECUTOR=local make test
 
 # clean up temporary files created during test execution
