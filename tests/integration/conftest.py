@@ -1,11 +1,13 @@
 import os
 import threading
+
 import pytest
+
 from localstack import config
-from localstack.services import infra
 from localstack.constants import ENV_INTERNAL_TEST_RUN
-from localstack.utils.common import cleanup, safe_requests, FuncThread
+from localstack.services import infra
 from localstack.utils.analytics.profiler import profiled
+from localstack.utils.common import cleanup, safe_requests, FuncThread
 from .test_terraform import TestTerraform
 
 mutex = threading.Semaphore(0)
@@ -38,6 +40,8 @@ def setup_and_teardown_package():
 
 
 def start_profiling(*args):
+    # TODO: implement profiler
+
     if not config.USE_PROFILER:
         return
 
