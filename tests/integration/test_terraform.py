@@ -20,7 +20,7 @@ class TestTerraform(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with(INIT_LOCK):
+        with INIT_LOCK:
             run('cd %s; terraform apply -input=false tfplan' % (cls.get_base_dir()))
 
     @classmethod
@@ -33,7 +33,7 @@ class TestTerraform(unittest.TestCase):
             return
 
         def _run(*args):
-            with(INIT_LOCK):
+            with INIT_LOCK:
                 base_dir = cls.get_base_dir()
                 if not os.path.exists(os.path.join(base_dir, '.terraform', 'plugins')):
                     run('cd %s; terraform init -input=false' % base_dir)

@@ -1,6 +1,6 @@
 module "api-gateway" {
   source      = "clouddrove/api-gateway/aws"
-  version     = "0.13.0"
+  version     = "0.14.1"
   name        = "tf-apigateway"
   environment = "test"
   label_order = ["environment", "name"]
