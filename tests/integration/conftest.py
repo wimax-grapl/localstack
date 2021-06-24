@@ -11,13 +11,6 @@ import threading
 
 import pytest
 
-from localstack import config
-from localstack.constants import ENV_INTERNAL_TEST_RUN
-from localstack.services import infra
-from localstack.utils.analytics.profiler import profiled
-from localstack.utils.common import safe_requests
-from tests.integration.test_terraform import TestTerraform
-
 logger = logging.getLogger(__name__)
 
 fixture_mutex = mp.Lock()  # mutex for getting the localstack_runtime fixture, which can trigger the startup
@@ -71,13 +64,22 @@ def startup_monitor() -> None:
         return
 
     logger.info('running localstack')
-    run_localstack()
+    p = mp.Process(target=run_localstack)
+    p.start()
+    p.join()
 
 
 def run_localstack():
     """
     Start localstack and block until it terminates. Terminate localstack by calling _trigger_stop().
     """
+    from localstack import config
+    from localstack.constants import ENV_INTERNAL_TEST_RUN
+    from localstack.services import infra
+    from localstack.utils.analytics.profiler import profiled
+    from localstack.utils.common import safe_requests
+    from tests.integration.test_terraform import TestTerraform
+
     os.environ[ENV_INTERNAL_TEST_RUN] = '1'
     safe_requests.verify_ssl = False
 
@@ -86,6 +88,19 @@ def run_localstack():
         localstack_stop.wait()  # triggered by _trigger_stop()
         logger.info('stopping infra')
         infra.stop_infra()
+
+    def start_profiling(*args):
+        if not config.USE_PROFILER:
+            return
+
+        @profiled()
+        def profile_func():
+            # keep profiler active until tests have finished
+            localstack_stopped.wait()
+
+        print('Start profiling...')
+        profile_func()
+        print('Done profiling...')
 
     monitor = threading.Thread(target=watchdog)
     monitor.start()
@@ -140,17 +155,3 @@ def localstack_runtime():
 
     yield
     return
-
-
-def start_profiling(*args):
-    if not config.USE_PROFILER:
-        return
-
-    @profiled()
-    def profile_func():
-        # keep profiler active until tests have finished
-        localstack_stopped.wait()
-
-    print('Start profiling...')
-    profile_func()
-    print('Done profiling...')
