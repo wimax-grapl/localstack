@@ -11,32 +11,50 @@ import threading
 
 import pytest
 
+from localstack import config
+from localstack.constants import ENV_INTERNAL_TEST_RUN
+from localstack.services import infra
+from localstack.utils.analytics.profiler import profiled
+from localstack.utils.common import safe_requests
+from tests.integration.test_terraform import TestTerraform
+
 logger = logging.getLogger(__name__)
 
-fixture_mutex = mp.Lock()  # mutex for getting the localstack_runtime fixture, which can trigger the startup
 localstack_started = mp.Event()  # event indicating whether localstack has been started
 localstack_stop = mp.Event()  # event that can be triggered to stop localstack
 localstack_stopped = mp.Event()  # event indicating that localstack has been stopped
 startup_monitor_event = mp.Event()  # event that can be triggered to start localstack
-
 will_run_terraform_tests = mp.Event()  # flag to indicate that terraform should be initialized
-
-
-@pytest.hookimpl(tryfirst=True)
-def pytest_collection_modifyitems(items):
-    for item in items:
-        if 'Terraform' in str(item.parent):
-            will_run_terraform_tests.set()
-            return
 
 
 @pytest.hookimpl()
 def pytest_configure(config):
+    # first pytest lifecycle hook
     _start_monitor()
+
+
+def pytest_runtestloop(session):
+    # second pytest lifecycle hook (before test runner starts)
+    for item in session.items:
+        # set flag that terraform will be used
+        if 'terraform' in str(item.parent).lower():
+            will_run_terraform_tests.set()
+            break
+
+    if not session.items:
+        return
+
+    if session.config.option.collectonly:
+        return
+
+    # trigger localstack startup in startup_monitor and wait until it becomes ready
+    startup_monitor_event.set()
+    localstack_started.wait()
 
 
 @pytest.hookimpl()
 def pytest_unconfigure(config):
+    # last pytest lifecycle hook (before pytest exits)
     _trigger_stop()
 
 
@@ -64,24 +82,17 @@ def startup_monitor() -> None:
         return
 
     logger.info('running localstack')
-    p = mp.Process(target=run_localstack)
-    p.start()
-    p.join()
+    run_localstack()
 
 
 def run_localstack():
     """
     Start localstack and block until it terminates. Terminate localstack by calling _trigger_stop().
     """
-    from localstack import config
-    from localstack.constants import ENV_INTERNAL_TEST_RUN
-    from localstack.services import infra
-    from localstack.utils.analytics.profiler import profiled
-    from localstack.utils.common import safe_requests
-    from tests.integration.test_terraform import TestTerraform
-
+    # configure
     os.environ[ENV_INTERNAL_TEST_RUN] = '1'
     safe_requests.verify_ssl = False
+    config.FORCE_SHUTDOWN = False
 
     def watchdog():
         logger.info('waiting stop event')
@@ -111,6 +122,7 @@ def run_localstack():
     threading.Thread(target=start_profiling).start()
 
     if will_run_terraform_tests.is_set():
+        logger.info('running terraform init')
         # init terraform binary if necessary
         TestTerraform.init_async()
 
@@ -139,19 +151,7 @@ def localstack_runtime():
         yield
         return
 
-    fixture_mutex.acquire()
-    if localstack_started.is_set():
-        # called by the first few executing tests that weren't fast enough and need to wait until localstack starts
-        fixture_mutex.release()
-        yield
-        return
-
-    try:
-        #  called by the first executing test
-        startup_monitor_event.set()
-        localstack_started.wait()
-    finally:
-        fixture_mutex.release()
-
+    startup_monitor_event.set()
+    localstack_started.wait()
     yield
     return
