@@ -97,7 +97,9 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 ADD tests/ tests/
 # fixes a dependency issue with pytest and python3.7 https://github.com/pytest-dev/pytest/issues/5594
 RUN pip uninstall -y argparse
-RUN LAMBDA_EXECUTOR=local make test
+RUN LAMBDA_EXECUTOR=local \
+    PYTEST_ARGS='--junitxml=target/test-report.xml' \
+    make test
 
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
