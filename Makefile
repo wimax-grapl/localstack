@@ -164,15 +164,15 @@ ci-build-prepare:
 	sudo useradd localstack -s /bin/bash
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
 	make init
-	nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
-	nohup docker pull lambci/lambda:20210129-ruby2.7 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null &
-	nohup docker pull lambci/lambda:dotnetcore3.1 > /dev/null &
-	nohup docker pull lambci/lambda:20191117-provided > /dev/null &
-	nohup docker pull lambci/lambda:java8 > /dev/null &
-	nohup docker pull lambci/lambda:python3.8 > /dev/null &
+	docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null
+	docker pull lambci/lambda:20191117-ruby2.5 > /dev/null
+	docker pull lambci/lambda:20210129-ruby2.7 > /dev/null
+	docker pull lambci/lambda:20191117-python3.6 > /dev/null
+	docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null
+	docker pull lambci/lambda:dotnetcore3.1 > /dev/null
+	docker pull lambci/lambda:20191117-provided > /dev/null
+	docker pull lambci/lambda:java8 > /dev/null
+	docker pull lambci/lambda:python3.8 > /dev/null
 
 ci-build-test:
 	# check if the build environment contains a special command via $$CUSTOM_CMD
