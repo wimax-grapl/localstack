@@ -73,14 +73,14 @@ jobs:
             USE_SSL: 1
             TEST_ERROR_INJECTION: 1
             TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
-            PYTEST_ARGS: "--junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker.xml -o junit_suite_name='lambda-docker'"
           command: make test
       - run:
           name: Test docker-reuse lambda executor
           environment:
             LAMBDA_EXECUTOR: "docker-reuse"
             TEST_PATH: "tests/integration/test_lambda.py tests/integration/test_integration.py"
-            PYTEST_ARGS: "--junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
+            PYTEST_ARGS: "--reruns 2 --junitxml=target/reports/lambda-docker-reuse.xml -o junit_suite_name='lambda-docker-reuse'"
           command: make test
       - store_test_results:
           path: target/reports/
